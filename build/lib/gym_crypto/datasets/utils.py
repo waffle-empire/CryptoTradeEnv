@@ -1,8 +1,9 @@
+import multiprocessing
 import os
+
+import numpy as np
 import pandas as pd
 import talib
-import numpy as np
-import multiprocessing
 
 manager = multiprocessing.Manager()
 norm_arrays = manager.dict()

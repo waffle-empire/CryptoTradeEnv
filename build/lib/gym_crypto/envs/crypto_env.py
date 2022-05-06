@@ -1,6 +1,8 @@
 import numpy as np
 
-from .trading_env import TradingEnv, Actions, Positions
+from .trading_env import Actions
+from .trading_env import Positions
+from .trading_env import TradingEnv
 
 
 class CryptoEnv(TradingEnv):

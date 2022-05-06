@@ -1,9 +1,10 @@
+from enum import Enum
+
 import gym
 from gym import spaces
 from gym.utils import seeding
-import numpy as np
-from enum import Enum
 import matplotlib.pyplot as plt
+import numpy as np
 
 
 class Actions(Enum):
