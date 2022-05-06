@@ -12,6 +12,11 @@ setup(
         'gym>=0.12.5',
         'numpy>=1.16.4',
         'pandas>=0.24.2',
-        'matplotlib>=3.1.1'
-    ]
+        'matplotlib>=3.1.1',
+        'TA-lib>=0.4.0'
+    ],
+
+    package_data={
+        'gym_crypto': ['datasets/data/*']
+    }
 )

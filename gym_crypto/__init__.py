@@ -8,9 +8,9 @@ register(
     id='crypto-v0',
     entry_point='gym_crypto.envs:CryptoEnv',
     kwargs={
-        'df': deepcopy(datasets.BTCUSDT),
+        'df': deepcopy(datasets.DOGEUSDT),
         'window_size': 60,
-        'frame_bound': (60, len(datasets.BTCUSDT))
+        'frame_bound': (60, len(datasets.DOGEUSDT))
     }
 )
 
