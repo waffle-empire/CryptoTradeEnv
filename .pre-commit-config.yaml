@@ -1,0 +1,44 @@
+exclude: ^(blib2to3/|profiling/|tests/data/|\.mypy/|\.tox/)
+repos:
+-   repo: git@github.com:pre-commit/pre-commit-hooks
+    rev: v4.2.0
+    hooks:
+    -   id: requirements-txt-fixer
+    -   id: check-case-conflict
+    -   id: check-json
+    -   id: debug-statements
+    -   id: check-merge-conflict
+    -   id: check-symlinks
+    -   id: end-of-file-fixer
+    -   id: pretty-format-json
+        args:
+        - --autofix
+    -   id: trailing-whitespace
+-   repo: local
+    hooks:
+    - id: black
+      name: black
+      language: system
+      args: ['-S', '-l', '120']
+      entry: black
+      types: [python]
+    - id: flake8
+      files: 'app'
+      name: flake8
+      language: system
+      entry: flake8
+      types: [python]
+- repo: https://github.com/humitos/mirrors-autoflake.git
+  rev: v1.1
+  hooks:
+    - id: autoflake
+      args: ['--in-place', '--remove-all-unused-imports', '--remove-unused-variable']
+-   repo: git@github.com:timothycrosley/isort
+    rev: 5.10.1
+    hooks:
+    -   id: isort
+        name: isort
+        entry: isort
+        require_serial: true
+        language: python
+        types: [python]
