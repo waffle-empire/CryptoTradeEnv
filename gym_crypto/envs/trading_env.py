@@ -44,6 +44,8 @@ class TradingEnv(gym.Env):
         self._done = None
         self._current_tick = None
         self._last_trade_tick = None
+        self._last_sell_tick = None
+        self._last_buy_tick = None
         self._position = None
         self._position_history = None
         self._action = None
@@ -61,6 +63,8 @@ class TradingEnv(gym.Env):
         self._done = False
         self._current_tick = self._start_tick
         self._last_trade_tick = self._current_tick - 1
+        self._last_sell_tick = self._current_tick - 1
+        self._last_buy_tick = self._current_tick - 1
         self._position = Positions.NO
         self._position_history = (self.window_size * [None]) + [self._position]
         self._action = Actions.HOLD
@@ -93,6 +97,10 @@ class TradingEnv(gym.Env):
         if trade:
             self._position = self._position.opposite()
             self._last_trade_tick = self._current_tick
+            if self._action == Actions.BUY.value:
+                self._last_sell_tick = self._current_tick
+            else:
+                self._last_buy_tick = self._current_tick
 
         self._position_history.append(self._position)
         self._action_history.append(self._action)
