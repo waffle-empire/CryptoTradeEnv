@@ -1,17 +1,17 @@
 import numpy as np
 
-from .trading_env import Actions, Positions, TradingEnv
+from .trading_env import *
 
 
 class CryptoEnv(TradingEnv):
     def __init__(self, df, window_size, frame_bound):
-        assert len(frame_bound) == 2
+        # assert len(frame_bound) == 2
 
         self.frame_bound = frame_bound
         super().__init__(df, window_size)
 
-        self.trade_fee_bid_percent = 0.01  # unit
-        self.trade_fee_ask_percent = 0.01  # unit
+        self.trade_fee_bid_percent = 0.01  # percentage of value
+        self.trade_fee_ask_percent = 0.01  # percentage of value
 
     def _process_data(self):
         prices = self.df.loc[:, 'Close'].to_numpy()
@@ -27,26 +27,54 @@ class CryptoEnv(TradingEnv):
     def _calculate_reward(self, action):
         step_reward = 0
 
-        trade = False
-        if (action == Actions.Buy.value and self._position == Positions.Short) or (
-            action == Actions.Sell.value and self._position == Positions.Long
-        ):
-            trade = True
+        # trade = False
+        # if (action == Actions.BUY.value and self._position == Positions.NO) or (
+        #     action == Actions.SELL.value and self._position == Positions.YES
+        # ):
+        #     trade = True
 
-        if trade:
-            current_price = self.prices[self._current_tick]
-            last_trade_price = self.prices[self._last_trade_tick]
-            price_diff = current_price - last_trade_price
+        # if trade:
+        #     current_price = self.prices[self._current_tick]
+        #     last_trade_price = self.prices[self._last_trade_tick]
+        #     price_diff = current_price - last_trade_price
 
-            if self._position == Positions.Long:
-                step_reward += price_diff
+        #     if self._position == Positions.Long:
+        #         step_reward += price_diff
+
+        self.prices[self._current_tick]
+        self.prices[self._last_trade_tick]
+
+        if action == Actions.BUY.value and self._position == Positions.NO:
+            # BUY
+            # check previous values if trand is downward
+
+            # check next values if trend is upward
+
+            pass
+        elif action == Actions.SELL.value and self._position == Positions.YES:
+            # SELL
+            # check previous values if trend is upward
+
+            # check next values if trand is downward
+
+            pass
+        elif action == Actions.HOLD.value:
+            # HOLD
+            # check previous values if trend is upward
+
+            # check next values if trand is upward
+            pass
+
+        else:
+            # BUY when position was True or SELL when position was False
+            pass
 
         return step_reward
 
     def _update_profit(self, action):
         trade = False
-        if (action == Actions.Buy.value and self._position == Positions.Short) or (
-            action == Actions.Sell.value and self._position == Positions.Long
+        if (action == Actions.BUY.value and self._position == Positions.NO) or (
+            action == Actions.SELL.value and self._position == Positions.YES
         ):
             trade = True
 
@@ -54,7 +82,7 @@ class CryptoEnv(TradingEnv):
             current_price = self.prices[self._current_tick]
             last_trade_price = self.prices[self._last_trade_tick]
 
-            if self._position == Positions.Long:
+            if self._position == Positions.YES:
                 shares = (self._total_profit * (1 - self.trade_fee_ask_percent)) / last_trade_price
                 self._total_profit = (shares * (1 - self.trade_fee_bid_percent)) * current_price
 
@@ -68,13 +96,13 @@ class CryptoEnv(TradingEnv):
             if self.prices[current_tick] < self.prices[current_tick - 1]:
                 while current_tick <= self._end_tick and self.prices[current_tick] < self.prices[current_tick - 1]:
                     current_tick += 1
-                position = Positions.Short
+                position = Positions.NO
             else:
                 while current_tick <= self._end_tick and self.prices[current_tick] >= self.prices[current_tick - 1]:
                     current_tick += 1
-                position = Positions.Long
+                position = Positions.YES
 
-            if position == Positions.Long:
+            if position == Positions.YES:
                 current_price = self.prices[current_tick - 1]
                 last_trade_price = self.prices[last_trade_tick]
                 shares = profit / last_trade_price

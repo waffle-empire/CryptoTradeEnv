@@ -14,11 +14,11 @@ class Actions(Enum):
 
 
 class Positions(Enum):
-    No = 0
-    Yes = 1
+    NO = 0
+    YES = 1
 
     def opposite(self):
-        return Positions.No if self == Positions.Yes else Positions.Yes
+        return Positions.NO if self == Positions.YES else Positions.YES
 
 
 class TradingEnv(gym.Env):
@@ -61,7 +61,7 @@ class TradingEnv(gym.Env):
         self._done = False
         self._current_tick = self._start_tick
         self._last_trade_tick = self._current_tick - 1
-        self._position = Positions.No
+        self._position = Positions.NO
         self._position_history = (self.window_size * [None]) + [self._position]
         self._action = Actions.HOLD
         self._action_history = (self.window_size * [None]) + [self._action]
@@ -85,8 +85,8 @@ class TradingEnv(gym.Env):
         self._update_profit(self._action)
 
         trade = False
-        if (self._action == Actions.BUY.value and self._position == Positions.No) or (
-            self._action == Actions.SELL.value and self._position == Positions.Yes
+        if (self._action == Actions.BUY.value and self._position == Positions.NO) or (
+            self._action == Actions.SELL.value and self._position == Positions.YES
         ):
             trade = True
 
