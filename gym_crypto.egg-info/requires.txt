@@ -3,3 +3,4 @@ numpy>=1.16.4
 pandas>=0.24.2
 matplotlib>=3.1.1
 TA-lib>=0.4.0
+numba>=0.55.1

@@ -13,14 +13,11 @@ class CryptoEnv(TradingEnv):
         self.trade_fee_bid_percent = 0.01  # percentage
         self.trade_fee_ask_percent = 0.01  # percentage
 
-        self._tick_range = 10
-        self._reward_bonus = 1
-
         self._look_ahead_range = 5
 
         self._profitable_sell_threshold = 1 # %
         self._profitable_sell_reward = 1
-        self._non_profitable_sell_punishment = -1
+        self._non_profitable_sell_punishment = -self._profitable_sell_reward
 
     def _process_data(self):
         prices = self.df.loc[:, 'Close'].to_numpy()
@@ -53,7 +50,7 @@ class CryptoEnv(TradingEnv):
         last_buy_price = self.prices[self._last_buy_tick]
         last_sell_price = self.prices[self._last_sell_tick]
 
-        if self._position == Positions.YES:
+        if self._position == Positions.NO:
             temp_max_price = current_price
             temp_min_price = current_price
 
@@ -76,6 +73,7 @@ class CryptoEnv(TradingEnv):
 
             if current_price < temp_max_price:
                 #reward for buying at low point
+                #increase to prevent piramidding
                 step_reward += ( (temp_max_price - current_price) / current_price ) * 100
 
         else:
