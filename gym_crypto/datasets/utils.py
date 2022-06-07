@@ -1,9 +1,11 @@
 import multiprocessing
 import os
 
+from numba import jit
 import numpy as np
 import pandas as pd
 import talib
+
 
 manager = multiprocessing.Manager()
 norm_arrays = manager.dict()
@@ -65,6 +67,7 @@ DF_COLUMNS_3 = ['difference_low_high', 'difference_open_close']
 # endregion
 
 
+@jit
 def load_dataset(name):
     base_dir = os.path.dirname(os.path.abspath(__file__))
     path = os.path.join(base_dir, 'data', name + '.csv')

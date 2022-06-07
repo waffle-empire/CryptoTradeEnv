@@ -1,9 +1,11 @@
 import multiprocessing
 import os
 
+from numba import jit
 import numpy as np
 import pandas as pd
 import talib
+
 
 manager = multiprocessing.Manager()
 norm_arrays = manager.dict()
@@ -65,15 +67,15 @@ DF_COLUMNS_3 = ['difference_low_high', 'difference_open_close']
 # endregion
 
 
+@jit
 def load_dataset(name):
     base_dir = os.path.dirname(os.path.abspath(__file__))
     path = os.path.join(base_dir, 'data', name + '.csv')
-    df = pd.read_csv(path, parse_dates=True)
+    df = pd.read_csv(path, parse_dates=True, engine="numba")
 
     # data checks
-    df.fillna(0, inplace=True)
-    df.replace([np.inf, -np.inf], 0, inplace=True)
-
+    df.fillna(0, inplace=True, engine="numba")
+    df.replace([np.inf, -np.inf], 0, inplace=True, engine="numba")
     df = calc_indicators(df)
 
     return df
@@ -85,7 +87,6 @@ def calc_indicators(df):
     lows = df['low'].to_numpy(dtype=np.double)
     opens = df['open'].to_numpy(dtype=np.double)
     volumes = df['volume'].to_numpy(dtype=np.double)
-
     difference_low_high = np.divide(np.subtract(highs, lows), lows)
     difference_open_close = np.divide(np.subtract(closes, opens), opens)
 
@@ -99,13 +100,11 @@ def calc_indicators(df):
     )
     adosc = talib.ADOSC(highs, lows, closes, volumes, fastperiod=ADOSC_FAST, slowperiod=ADOSC_SLOW)
     atr = talib.ATR(highs, lows, closes, timeperiod=ATR_PERIOD)
-
     data1 = np.column_stack(
         (opens, closes, highs, lows, volumes, adosc, atr, macd, macdsignal, macdhist, upperband, middleband, lowerband)
     )
     data2 = np.column_stack((mfi, rsi))
     data3 = np.column_stack((difference_low_high, difference_open_close))
-
     df1 = pd.DataFrame(data1, columns=DF_COLUMNS_1)
     df2 = pd.DataFrame(data2, columns=DF_COLUMNS_2)
     df3 = pd.DataFrame(data3, columns=DF_COLUMNS_3)
@@ -146,10 +145,8 @@ def multi_normalize(df1, df2, df3):
         )
         p.start()
         norm_workers.append(p)
-
     for p in norm_workers:
         p.join()
-
     data1 = np.column_stack(
         (
             norm_arrays["open"],
