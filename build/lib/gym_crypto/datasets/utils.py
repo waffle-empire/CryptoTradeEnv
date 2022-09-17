@@ -1,11 +1,10 @@
 import multiprocessing
 import os
-
+from enum import Enum
 from numba import jit
 import numpy as np
 import pandas as pd
 import talib
-
 
 manager = multiprocessing.Manager()
 norm_arrays = manager.dict()
@@ -64,6 +63,19 @@ DF_COLUMNS_1 = [
 ]
 DF_COLUMNS_2 = ['mfi', 'rsi']
 DF_COLUMNS_3 = ['difference_low_high', 'difference_open_close']
+
+class Actions(Enum):
+    BUY = 0
+    HOLD = 1
+    SELL = 2
+
+
+class Positions(Enum):
+    NO = 0
+    YES = 1
+
+    def opposite(self):
+        return Positions.NO if self == Positions.YES else Positions.YES
 # endregion
 
 
@@ -71,11 +83,11 @@ DF_COLUMNS_3 = ['difference_low_high', 'difference_open_close']
 def load_dataset(name):
     base_dir = os.path.dirname(os.path.abspath(__file__))
     path = os.path.join(base_dir, 'data', name + '.csv')
-    df = pd.read_csv(path, parse_dates=True, engine="numba")
+    df = pd.read_csv(path, parse_dates=True)
 
     # data checks
-    df.fillna(0, inplace=True, engine="numba")
-    df.replace([np.inf, -np.inf], 0, inplace=True, engine="numba")
+    df.fillna(0, inplace=True)
+    df.replace([np.inf, -np.inf], 0, inplace=True)
     df = calc_indicators(df)
 
     return df

@@ -6,21 +6,6 @@ from gym.utils import seeding
 import matplotlib.pyplot as plt
 import numpy as np
 
-
-class Actions(Enum):
-    BUY = 0
-    HOLD = 1
-    SELL = 2
-
-
-class Positions(Enum):
-    NO = 0
-    YES = 1
-
-    def opposite(self):
-        return Positions.NO if self == Positions.YES else Positions.YES
-
-
 class TradingEnv(gym.Env):
 
     metadata = {'render.modes': ['human']}

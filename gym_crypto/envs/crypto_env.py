@@ -1,7 +1,7 @@
 import numpy as np
 
 from .trading_env import *
-
+from utils import Actions, Positions
 
 class CryptoEnv(TradingEnv):
     def __init__(self, df, window_size, frame_bound):

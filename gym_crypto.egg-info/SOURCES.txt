@@ -1,4 +1,7 @@
+.pre-commit-config.yaml
 README.md
+requirements.txt
+setup.cfg
 setup.py
 gym_crypto/__init__.py
 gym_crypto.egg-info/PKG-INFO
@@ -12,3 +15,4 @@ gym_crypto/datasets/data/DOGEUSDT.csv
 gym_crypto/envs/__init__.py
 gym_crypto/envs/crypto_env.py
 gym_crypto/envs/trading_env.py
+gym_crypto/examples/A2C_quantstats.ipynb
