@@ -1,23 +1,17 @@
-from enum import Enum
-
-import gym
-from gym import spaces
-from gym.utils import seeding
-import matplotlib.pyplot as plt
 import numpy as np
 
-class TradingEnv(gym.Env):
+from utils import Actions, Positions
 
+class CryptoEnv(gym.Env):
     metadata = {'render.modes': ['human']}
 
-    def __init__(self, df, window_size):
-        assert df.ndim == 2
-
-        self.seed()
+    def __init__(self, df, window_size, frame_bound, reward_algo):
         self.df = df
         self.window_size = window_size
         self.prices, self.signal_features = self._process_data()
         self.shape = (window_size, self.signal_features.shape[1])
+
+        self.frame_bound = frame_bound
 
         # spaces
         self.action_space = spaces.Discrete(len(Actions))
@@ -40,26 +34,41 @@ class TradingEnv(gym.Env):
         self._first_rendering = None
         self.history = None
 
-    def seed(self, seed=None):
-        self.np_random, seed = seeding.np_random(seed)
-        return [seed]
+        self.trade_fee_bid_percent = 0.075  # percentage
+        self.trade_fee_ask_percent = 0.075  # percentage
 
-    def reset(self):
-        self._done = False
-        self._current_tick = self._start_tick
-        self._last_trade_tick = self._current_tick - 1
-        self._last_sell_tick = self._current_tick - 1
-        self._last_buy_tick = self._current_tick - 1
-        self._position = Positions.NO
-        self._position_history = (self.window_size * [None]) + [self._position]
-        self._action = Actions.HOLD
-        self._action_history = (self.window_size * [None]) + [self._action]
-        self._total_reward = 0.0
-        self._total_profit = 1.0  # unit
-        self._first_rendering = True
-        self.history = {}
-        return self._get_observation()
+        self._look_ahead_range = 5
 
+        self._profitable_sell_threshold = 1  # %
+        self._profitable_sell_reward = 1
+        self._non_profitable_sell_punishment = -self._profitable_sell_reward
+
+        self.reward_algo = reward_algo
+        self.reward_history = []
+
+    def _process_data(self):
+        prices = self.df.loc[:, 'Close'].to_numpy()
+
+        prices[self.frame_bound[0] - self.window_size]  # validate index (TODO: Improve validation)
+        prices = prices[self.frame_bound[0] - self.window_size : self.frame_bound[1]]
+
+        diff = np.insert(np.diff(prices), 0, 0)
+        signal_features = np.column_stack((prices, diff))
+
+        return prices, signal_features
+
+    def _calculate_reward(self, action):
+        step_reward = 0
+
+        if action == Actions.BUY.value:
+            step_reward = self.reward_algo.buy_reward(self)
+        elif action == Actions.SELL.value:
+            step_reward = self.reward_algo.sell_reward(self)
+        elif action == Actions.HOLD.value:
+            step_reward = self.reward_algo.hold_reward(self)
+
+        return step_reward
+    
     def step(self, action):
         self._action = action
         self._done = False
@@ -82,20 +91,71 @@ class TradingEnv(gym.Env):
         if trade:
             self._position = self._position.opposite()
             self._last_trade_tick = self._current_tick
+
             if self._action == Actions.BUY.value:
-                self._last_sell_tick = self._current_tick
-            else:
                 self._last_buy_tick = self._current_tick
+            else:
+                self._last_sell_tick = self._current_tick
 
         self._position_history.append(self._position)
         self._action_history.append(self._action)
 
         observation = self._get_observation()
-        info = dict(total_reward=self._total_reward, total_profit=self._total_profit, position=self._position.value)
+        info = dict(step_reward=step_reward, total_reward=self._total_reward, total_profit=self._total_profit, position=self._position.value)
         self._update_history(info)
 
         return observation, step_reward, self._done, info
 
+    def _update_profit(self, action):
+        if (action == Actions.SELL.value and self._position == Positions.YES) or self._done:
+            current_price = self.prices[self._current_tick]
+            last_buy_price = self.prices[self._last_buy_tick]
+
+            if self._position == Positions.YES and self._done:
+                shares = (self._total_profit * (1 - self.trade_fee_ask_percent)) / last_buy_price
+                self._total_profit = (shares * (1 - self.trade_fee_bid_percent)) * current_price
+
+    def max_possible_profit(self):
+        current_tick = self._start_tick
+        last_trade_tick = current_tick - 1
+        profit = 1.0
+
+        while current_tick <= self._end_tick:
+            position = None
+            if self.prices[current_tick] < self.prices[current_tick - 1]:
+                while current_tick <= self._end_tick and self.prices[current_tick] < self.prices[current_tick - 1]:
+                    current_tick += 1
+                position = Positions.NO
+            else:
+                while current_tick <= self._end_tick and self.prices[current_tick] >= self.prices[current_tick - 1]:
+                    current_tick += 1
+                position = Positions.YES
+
+            if position == Positions.YES:
+                current_price = self.prices[current_tick - 1]
+                last_trade_price = self.prices[last_trade_tick]
+                shares = profit / last_trade_price
+                profit = shares * current_price
+            last_trade_tick = current_tick - 1
+
+        return profit
+    
+    def reset(self):
+        self._done = False
+        self._current_tick = self._start_tick
+        self._last_trade_tick = self._current_tick - 1
+        self._last_sell_tick = self._current_tick - 1
+        self._last_buy_tick = self._current_tick - 1
+        self._position = Positions.NO
+        self._position_history = (self.window_size * [None]) + [self._position]
+        self._action = Actions.HOLD
+        self._action_history = (self.window_size * [None]) + [self._action]
+        self._total_reward = 0.0
+        self._total_profit = 1.0  # unit
+        self._first_rendering = True
+        self.history = {}
+        return self._get_observation()
+    
     def _get_observation(self):
         return self.signal_features[(self._current_tick - self.window_size) : self._current_tick]
 
@@ -160,15 +220,3 @@ class TradingEnv(gym.Env):
 
     def pause_rendering(self):
         plt.show()
-
-    def _process_data(self):
-        raise NotImplementedError
-
-    def _calculate_reward(self, action):
-        raise NotImplementedError
-
-    def _update_profit(self, action):
-        raise NotImplementedError
-
-    def max_possible_profit(self):  # trade fees are ignored
-        raise NotImplementedError
